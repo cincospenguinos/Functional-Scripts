@@ -8,34 +8,21 @@ class UOfUBuses
 
   def initialize()
     @driver = Selenium::WebDriver.for(:phantomjs)
-    @driver.navigate.to('http://www.uofubus.com')
+    @wait = Selenium::WebDriver::Wait.new(:timeout => 10)
+    @wait.until { @driver.navigate.to('http://www.uofubus.com') }
+    sleep(5.0)
+  end
+
+  def print_html
+    puts @driver.page_source
   end
 
   ## Gets all the routes currently on the page
   def get_routes()
     @routes = {}
 
-    @driver.find_element(:id, 'routes').find_elements(:class, 'route').each do |route|
-      route_name = route.find_element(:class, 'title').text
-      route_id = route.attribute('id').to_s
-
-      puts route_name + ' ' + route_id
-
-      @routes[route_name] = BusRoute.new(route_name, route_id)
-    end
-
-    @driver.find_elements(:class, 'route').each do |route|
-      # Get the route name and the route ID, and store them in a BusRoute object
-      route_name = route.find_element(:class, 'title').text
-      route_id = route.attribute('id').to_s
-
-      # puts route_name + ' ' + route_id
-
-      if(route_name == '')
-      	next
-      end
-
-      @routes[route_name] = BusRoute.new(route_name, route_id)
+    @driver.find_elements(:tag_name, 'h3').each do |element|
+      puts element.text
     end
   end
 
@@ -102,7 +89,8 @@ end
 
 var = UOfUBuses.new()
 var.get_routes
-var.print_all_routes
+#var.print_html
+# var.print_all_routes
 #puts var.get_stop_times('Green')
 
 var.close
