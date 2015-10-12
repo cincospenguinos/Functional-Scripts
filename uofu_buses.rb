@@ -26,6 +26,25 @@ class UOfUBuses
     end
   end
 
+  ### Returns the current location information of the bus passed
+  def get_current_location(route_name)
+    if @routes[route_name]
+      route = @routes[route_name]
+      details_btn = @driver.find_element(:id, route.get_id).find_element(:class, 'detailsBtn')
+      details_btn.click
+      sleep(1.0)
+      # Now the various stops should be shown along with the arrival times
+      @driver.find_element(:id, route.get_id).find_elements(:tag_name, 'tr').each do |row|
+        puts row.find_element(:class, 'stopName').attribute('title')
+
+      end
+      # We will hide the various arrival times as well
+      details_btn.click
+    else
+      puts 'Could not find that bus route'
+    end
+  end
+
   ### Prints all the current routes
   def print_current_routes
     @routes.each do |route_name, id|
@@ -63,5 +82,5 @@ end
 Headless.ly do
   buses = UOfUBuses.new
   buses.get_current_routes
-  buses.print_current_routes
+  buses.get_current_location('green')
 end
