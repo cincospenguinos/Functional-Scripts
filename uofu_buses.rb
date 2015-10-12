@@ -1,98 +1,67 @@
 # uofu_buses.rb
 # Basically a script that goes and grabs info from the U of U buses page.
 
+require 'rubygems'
+require 'headless'
 require 'selenium-webdriver'
 
 ### Class that grabs information from the UOfUBuses page
 class UOfUBuses
 
-  def initialize()
-    @driver = Selenium::WebDriver.for(:phantomjs)
-    @wait = Selenium::WebDriver::Wait.new(:timeout => 10)
-    @wait.until { @driver.navigate.to('http://www.uofubus.com') }
-    sleep(5.0)
-  end
+  def initialize
+    @driver = Selenium::WebDriver.for :firefox
+    @driver.navigate.to 'http://www.uofubus.com'
+    sleep(5.0) # This lets the page catch up and show us the information we want
 
-  def print_html
-    puts @driver.page_source
-  end
-
-  ## Gets all the routes currently on the page
-  def get_routes()
     @routes = {}
+  end
 
-    @driver.find_elements(:tag_name, 'h3').each do |element|
-      puts element.text
+  ### Gets the current bus routes
+  def get_current_routes
+    @driver.find_elements(:class, 'route').each do |route|
+      name = route.find_element(:class, 'title').attribute('textContent').downcase.strip
+      id = route.attribute('id').to_s
+
+      @routes[name] = BusRoute.new(name, id)
     end
   end
 
-  ## Gets all the stops for the route requested
-  def get_stop_times(route)
-  	if(!@routes[route])
-  	  raise RuntimeError, "Cannot find the route '#{route}'"
-  	end
-
-  	route = @routes[route]
-  	stops = {}
-
-  	@driver.find_element(:id, route.get_id).find_element(:class, 'detailsBtn').click
-  	sleep(0.5)
-
-  	@driver.find_element(:id, route.get_id).find_elements(:tag_name, 'tr').each do |stop|
-  	  stop_name = stop.find_element(:tag_name, 'span').text
-  	  if(stop_name.downcase.include?('bus'))
-  	  	next
-  	  end
-
-  	  time = stop.find_element(:class, 'time').text.gsub(/\wmin/, '').to_i
-
-  	  stops[stop_name] = time
-  	end
-
-  	stops
-  end
-
-  def print_all_routes
-    @routes.each_pair do |key, value|
-      puts "#{key} => " + value.to_s
+  ### Prints all the current routes
+  def print_current_routes
+    @routes.each do |route_name, id|
+      puts "#{route_name} => #{id}"
     end
   end
-
-  def close
-  	@driver.close
-  end
-
-  
 
   private
 
+  ### Class representing some bus route - basically a struct
   class BusRoute
-    def initialize(route, route_id)
-      @route = route
+    def initialize(route_name, route_id)
+      @route_name = route_name
       @route_id = route_id
     end
 
+    ### Returns the HTML id of this bus route
     def get_id
       @route_id
     end
 
-    def get_route
-      @route
+    ### Returns the name of this bus route
+    def get_name
+      @route_name
     end
 
+    ### Returns a string version of this Bus Route
     def to_s
-      result = @route.to_s + ' ' + @route_id.to_s
+      result = @route_name.to_s + ' ' + @route_id.to_s
       result
     end
   end
 end
 
-var = UOfUBuses.new()
-var.get_routes
-#var.print_html
-# var.print_all_routes
-#puts var.get_stop_times('Green')
-
-var.close
-
-
+Headless.ly do
+  buses = UOfUBuses.new
+  buses.get_current_routes
+  buses.print_current_routes
+end
